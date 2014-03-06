@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <PreferenceCategory 
+        android:title="@string/preference_map_catecory"
+        android:key="preference_map_catecory">
+	    <ListPreference 
+	        android:key="pref_map"
+	        android:title="@string/map_preference_title"
+	        android:icon="@drawable/ic_menu_mapmode"
+	        android:summary="@string/map_preference_summary"
+	        android:dialogTitle="@string/map_preference_title"
+	        android:entries="@array/map_keys"
+	        android:entryValues="@array/map_values"
+	        android:defaultValue="@string/map_default" />
+	    
+      	<CheckBoxPreference 
+            android:key="pref_enable_directions"
+            android:title="@string/directions_preference_title"
+            android:icon="@drawable/ic_menu_edit"
+            android:summary="@string/directions_preference_summary"
+            android:defaultValue="true"/>
+	    
+	    <ListPreference 
+	        android:key="pref_movement"
+	        android:title="@string/movement_preference_title"
+	        android:icon="@drawable/ic_menu_empty"
+	        android:summary="@string/movement_preference_summary"
+	        android:dialogTitle="@string/movement_preference_title"
+	        android:dependency="pref_enable_directions"
+	        android:entries="@array/movement_keys"
+	        android:entryValues="@array/movement_values"
+	        android:defaultValue="@string/movement_default"/>
+	    
+       	<CheckBoxPreference 
+            android:key="pref_avoid_highways"
+            android:title="@string/avoid_highways_title"
+            android:icon="@drawable/ic_menu_empty"
+            android:dependency="pref_enable_directions"
+            android:summary="@string/avoid_highways_summary"
+            android:defaultValue="false"/>
+       	
+       	<CheckBoxPreference 
+            android:key="pref_avoid_tolls"
+            android:title="@string/avoid_tolls_title"
+            android:icon="@drawable/ic_menu_empty"
+            android:dependency="pref_enable_directions"
+            android:summary="@string/avoid_tolls_summary"
+            android:defaultValue="false"/>
+    </PreferenceCategory>
+    
+    <PreferenceCategory
+        android:title="@string/preference_gps_category"
+        android:key="preference_gps_category">
+	    
+        <CheckBoxPreference 
+            android:key="pref_enable_gps"
+            android:title="@string/gps_preference_title"
+            android:icon="@drawable/ic_menu_mylocation"
+            android:summary="@string/gps_preference_summary"
+            android:defaultValue="true"/>
+        
+        <CheckBoxPreference 
+            android:key="pref_enable_map_tracking"
+            android:title="@string/tracking_preference_title"
+            android:icon="@drawable/ic_popup_sync_2"
+            android:summary="@string/tracking_preference_summary"
+            android:dependency="pref_enable_gps"
+            android:defaultValue="true"/>
+        
+        <ListPreference 
+            android:key="pref_location_update"
+            android:title="@string/location_update_title"
+            android:icon="@drawable/ic_menu_recent_history"
+            android:summary="@string/location_preference_summary"
+            android:dependency="pref_enable_map_tracking"
+            android:dialogTitle="@string/location_update_title"
+            android:entries="@array/movement_update_keys"
+            android:entryValues="@array/movement_update_values"
+            android:defaultValue="@string/movement_update_default" />
+        
+    </PreferenceCategory>
+    	
+
+</PreferenceScreen>
