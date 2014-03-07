@@ -18,7 +18,7 @@
     <string name="gps_preference_summary">Vis min posisjon på kartet</string>
     <string name="directions_preference_title">Veibeskrivelse</string>
     <string name="tracking_preference_summary">Last nye kartfliser automatisk når jeg beveger meg</string>
-    <string name="location_preference_summary">Hvor ofte skal min posisjon oppdateres</string>
+    <string name="location_preference_summary">Hvor ofte skal kartet oppdateres</string>
     <string name="directions_preference_summary">Aktiver veibeskrivelse på kartet</string>
     <string name="movement_preference_summary">Velg transportmetode</string>
     <string name="avoid_highways_summary">Unngå motorveier. (Gjelder bil som transportmetode)</string>

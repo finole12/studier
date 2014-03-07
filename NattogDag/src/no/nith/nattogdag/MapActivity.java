@@ -480,12 +480,14 @@ public class MapActivity extends Activity implements OnMarkerClickListener,
 	// Implement LocationListener interface
 	@Override
 	public void onLocationChanged(Location location) {
-		Toast.makeText(MapActivity.this, location.getLatitude() + " " + location.getLongitude(), 
-				Toast.LENGTH_SHORT).show();
+//		Toast.makeText(MapActivity.this, location.getLatitude() + " " + location.getLongitude(), 
+//				Toast.LENGTH_SHORT).show();
 //				LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
 //				float zoom = savedValues.getFloat("zoom", 10);
+		if(location != null) {
 				map.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), 
 						location.getLongitude())));
+		}
 	}
 	
 	
