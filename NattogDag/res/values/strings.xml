@@ -28,6 +28,10 @@
     <string name="map_default">MAP_TYPE_NORMAL</string>
     <string name="movement_default">walking</string>
     <string name="movement_update_default">5</string>
+    <string name="delivery">Antall levert:</string>
+    <string name="returns">Antall retur:</string>
+    <string name="ok">Send rapport</string>
+    <string name="cancel">Avbryt</string>
 
     <string-array name="map_keys">
         <item>Normal</item>

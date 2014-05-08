@@ -24,6 +24,7 @@ import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.GoogleMap.OnInfoWindowClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
@@ -33,23 +34,30 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 
+import android.R.integer;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.preference.PreferenceManager;
+import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.graphics.Color;
 
-public class MapActivity extends Activity implements OnMarkerClickListener,
-		ConnectionCallbacks, OnConnectionFailedListener, LocationListener, Serializable {
+public class MapActivity extends FragmentActivity implements OnMarkerClickListener,
+		ConnectionCallbacks, OnConnectionFailedListener, LocationListener, Serializable, 
+		OnInfoWindowClickListener {
 	
 	private SharedPreferences prefs;
 	private SharedPreferences savedValues;
@@ -59,6 +67,7 @@ public class MapActivity extends Activity implements OnMarkerClickListener,
 	
 	private GoogleMap map;
 	private MyMarker myMarker;
+	private HashMap<String, Integer> markerIDMap;
 	private String user;
 	private String password;
 	private static MyMarker[] markerArray;
@@ -71,6 +80,9 @@ public class MapActivity extends Activity implements OnMarkerClickListener,
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_map);
+		
+		StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+		StrictMode.setThreadPolicy(policy);
 		
 		PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -204,6 +216,7 @@ public class MapActivity extends Activity implements OnMarkerClickListener,
 	            // The Map is verified. It is now safe to manipulate the map.
 	        	setMapType();
 	        	map.setOnMarkerClickListener(this);
+	        	map.setOnInfoWindowClickListener(this);
 	        	
 	        	Boolean gpsPrefs = prefs.getBoolean("pref_enable_gps", true);
 	        	map.setMyLocationEnabled(gpsPrefs);
@@ -313,10 +326,12 @@ public class MapActivity extends Activity implements OnMarkerClickListener,
 		Gson gson = new Gson(); // <-- Using Gson to convert the Json to an array of 
 		// MyMarker objects
 		String jsonString = savedValues.getString("jsonString", null);
+		markerIDMap = new HashMap<String, Integer>();
 		
 		markerArray = gson.fromJson(jsonString, MyMarker[].class);
 		for(MyMarker mymarker: markerArray) {
 			String snippet = mymarker.getAddress() + " " + mymarker.getCity();
+			markerIDMap.put(snippet, mymarker.getId());
 			map.addMarker(new MarkerOptions().position(mymarker.getLatlng())
 				.title(mymarker.getName())
 				.snippet(snippet));
@@ -495,6 +510,33 @@ public class MapActivity extends Activity implements OnMarkerClickListener,
 	@Override
 	public void onConnectionFailed(ConnectionResult connectionResult) {
 		// TODO Auto-generated method stub
+		
+	}
+	
+	// implement OnInfoWindowClickListener interface
+	@Override
+	public void onInfoWindowClick(Marker marker) {
+		String stopID = Integer.toString(markerIDMap.get(marker.getSnippet()));
+		
+		Bundle myBundle = new Bundle();
+		myBundle.putString("stopID", stopID);
+		myBundle.putString("user", user);
+		myBundle.putString("password", password);
+		DeliveryDialogFragment dialog = new DeliveryDialogFragment();
+		dialog.setArguments(myBundle);
+		dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
+		
+		Log.d("StopID:", stopID);
+		
+		
+//		AlertDialog.Builder dialog = new AlertDialog.Builder(MapActivity.this);
+//		dialog.setMessage("Din melding her!");
+//		dialog.setCancelable(true);
+//		
+//		AlertDialog alert11 = dialog.create();
+//		alert11.show();
+//		Toast.makeText(MapActivity.this, "Wohoooo!!!!!", 
+//				Toast.LENGTH_SHORT).show(); 
 		
 	}
 	
