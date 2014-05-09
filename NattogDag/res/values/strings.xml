@@ -86,7 +86,7 @@
         <item>600</item>
     </string-array>
 
-    <string name="title_activity_settings">Innstillinger</string>
+    
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
     <string name="button_logout">Logg ut</string>

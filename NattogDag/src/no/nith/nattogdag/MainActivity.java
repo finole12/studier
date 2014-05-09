@@ -125,7 +125,7 @@ public class MainActivity extends Activity implements OnClickListener {
 				startActivity(intent);
 				brukernavnEditText.setText("");
 				passordEditText.setText("");
-//				finish();
+				finish();
 				
 				
 			} else {

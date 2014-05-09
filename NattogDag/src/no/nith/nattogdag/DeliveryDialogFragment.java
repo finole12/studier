@@ -59,6 +59,8 @@ public class DeliveryDialogFragment extends DialogFragment {
 	            	   Log.d("user", user);
 	            	   Log.d("password", password);
 	            	   
+//	            	   MapActivity mapActivity = (MapActivity) getActivity();
+//	            	   mapActivity.disableMarker();
 	               }
 	           })
 	           .setNegativeButton(R.string.cancel, new DialogInterface.OnClickListener() {

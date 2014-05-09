@@ -27,6 +27,7 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.GoogleMap.OnInfoWindowClickListener;
 import com.google.android.gms.maps.GoogleMap.OnMarkerClickListener;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -80,6 +81,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_map);
+		setTitle("Rutekart");
 		
 		StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
 		StrictMode.setThreadPolicy(policy);
@@ -529,6 +531,12 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 		Log.d("StopID:", stopID);
 		
 		
+		 marker.remove();
+		 map.addMarker(new MarkerOptions()
+		                          .position(marker.getPosition())
+		                          .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+// 		DeliveryDialogFragment dialog = new DeliveryDialogFragment();
+// 		dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
 //		AlertDialog.Builder dialog = new AlertDialog.Builder(MapActivity.this);
 //		dialog.setMessage("Din melding her!");
 //		dialog.setCancelable(true);
@@ -536,8 +544,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 //		AlertDialog alert11 = dialog.create();
 //		alert11.show();
 //		Toast.makeText(MapActivity.this, "Wohoooo!!!!!", 
-//				Toast.LENGTH_SHORT).show(); 
-		
+//				Toast.LENGTH_SHORT).show(); 	
 	}
 	
 
