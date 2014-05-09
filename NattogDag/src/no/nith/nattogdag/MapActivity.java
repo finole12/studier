@@ -50,6 +50,7 @@ import android.widget.Toast;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -65,6 +66,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	private String maptype;
 	private LocationClient locationClient;
 	private LocationRequest locationRequest;
+	private ProgressDialog pd;
 	
 	private GoogleMap map;
 	private MyMarker myMarker;
@@ -199,6 +201,13 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 					String toast = "Veibeskrivelse er deaktivert i innstillinger";
 					Toast.makeText(MapActivity.this, toast, Toast.LENGTH_LONG).show();
 				}
+				return true;
+			case R.id.menu_getMyMarkers:
+				String getRouteURL = "https://nattogdagprosjekt-nith.rhcloud.com/NattogDag/" +
+						"JsonServlet?user=" + user + "&password=" + password +
+						"&command=getRoute";
+	        	
+	        	new GetMyMarkers().execute(getRouteURL);
 					
 				return true;
 				
@@ -227,11 +236,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	        	
 	        	setZoomAndLocation();
 	        	
-	        	String getRouteURL = "https://nattogdagprosjekt-nith.rhcloud.com/NattogDag/" +
-						"JsonServlet?user=" + user + "&password=" + password +
-						"&command=getRoute";
-	        	
-	        	new GetMyMarkers().execute(getRouteURL);
+	        	addMarkers();
 
 	        }
 	    }	    	    
@@ -264,6 +269,15 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 
 	
 	class GetMyMarkers extends AsyncTask<String, Void, String> {
+		@Override
+		protected void onPreExecute() {
+			pd = new ProgressDialog(MapActivity.this);
+			pd.setTitle("Laster ned ruteoppdateringer...");
+			pd.setMessage("Vennligst vent.");
+			pd.setCancelable(true);
+			pd.setIndeterminate(true);
+			pd.show();
+		}
 
 		@Override
 		protected String doInBackground(String... params) {
@@ -281,12 +295,18 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 		
 		@Override
 		protected void onPostExecute(String jsonString) {
+			if (pd!=null) {
+				pd.dismiss();
+			}
+			
 			if (jsonString != null) {
 				Editor editor = savedValues.edit();
 				editor.putString("jsonString", jsonString);
 				editor.commit();
 			}
-			addMarkers();		
+			
+//			map = null;
+//			setUpMapIfNeeded();
 		}	
 	}
 	
@@ -325,20 +345,39 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	}
 	
 	private void addMarkers() {
-		Gson gson = new Gson(); // <-- Using Gson to convert the Json to an array of 
-		// MyMarker objects
-		String jsonString = savedValues.getString("jsonString", null);
-		markerIDMap = new HashMap<String, Integer>();
 		
-		markerArray = gson.fromJson(jsonString, MyMarker[].class);
-		for(MyMarker mymarker: markerArray) {
-			String snippet = mymarker.getAddress() + " " + mymarker.getCity();
-			markerIDMap.put(snippet, mymarker.getId());
-			map.addMarker(new MarkerOptions().position(mymarker.getLatlng())
-				.title(mymarker.getName())
-				.snippet(snippet));
+		if(savedValues.getString("jsonString", null)  != null) {
+			Gson gson = new Gson(); // <-- Using Gson to convert the Json to an array of 
+			// MyMarker objects
+			String jsonString = savedValues.getString("jsonString", null);
+			markerIDMap = new HashMap<String, Integer>();
 			
+			markerArray = gson.fromJson(jsonString, MyMarker[].class);
+			if(markerArray != null) {
 			
+				Log.e("jsonstring", jsonString);
+				for(MyMarker mymarker: markerArray) {
+					String snippet = mymarker.getAddress() + " " + mymarker.getCity();
+					markerIDMap.put(snippet, mymarker.getId());
+					map.addMarker(new MarkerOptions().position(mymarker.getLatlng())
+						.title(mymarker.getName())
+						.snippet(snippet));
+				}
+			} else {
+				String toast = "Noe gikk galt med nedlastingen. \nVennligst prøv igjen.";
+				Toast.makeText(MapActivity.this, toast, Toast.LENGTH_LONG)
+					.show();
+				Toast.makeText(MapActivity.this, toast, Toast.LENGTH_LONG)
+					.show();
+				Toast.makeText(MapActivity.this, toast, Toast.LENGTH_LONG)
+					.show();
+			}
+			
+		} else {
+			String toastMsg = "Vennligst last ned avisrute ved å trykke på nedlastingsknappen.";
+			Toast.makeText(MapActivity.this, toastMsg, Toast.LENGTH_LONG).show();
+			Toast.makeText(MapActivity.this, toastMsg, Toast.LENGTH_LONG).show();
+			Toast.makeText(MapActivity.this, toastMsg, Toast.LENGTH_LONG).show();
 		}
 		
 	}
