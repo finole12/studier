@@ -48,10 +48,10 @@ public class Internet {
 		return jsonString;
 	}
 	
-	public static void sendDeliveryReport(String user, String password, String stopID, String delivered, 
+	public static String sendDeliveryReport(String user, String password, String stopID, String delivered, 
 			String returns) {
 		BufferedReader rd;
-		String jsonString = "";
+		String responseString = "";
 		try {
 			String parameters = URLEncoder.encode("command", "ISO-8859-1")
 					+ "=" + URLEncoder.encode("deliveryReport", "ISO-8859-1");
@@ -93,9 +93,10 @@ public class Internet {
 					Scanner scanner = new Scanner(rd);
 					// Uses the regex \A, which matches the beginning of input, telling Scanner 
 					// to tokenize the entire stream.
-					String responseString = scanner.useDelimiter("\\A").next();
+					responseString = scanner.useDelimiter("\\A").next();
 					scanner.close();
 					Log.d("responseString", responseString);
+					
 		            
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block
@@ -106,11 +107,12 @@ public class Internet {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			Log.e("IOException", e.toString());
+			return "IOException: " + e.toString();
 		}
 		
 		
 		
-		
+		return responseString;
 		
 		
 		

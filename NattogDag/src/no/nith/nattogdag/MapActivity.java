@@ -52,6 +52,7 @@ import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
@@ -69,7 +70,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	private ProgressDialog pd;
 	
 	private GoogleMap map;
-	private MyMarker myMarker;
+	private Marker onClickMarker;
 	private HashMap<String, Integer> markerIDMap;
 	private String user;
 	private String password;
@@ -150,6 +151,22 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 			locationClient.disconnect();
 		}
 		super.onStop();
+	}
+	
+	// Kode hentet fra : http://stackoverflow.com/questions/2257963/
+	// how-to-show-a-dialog-to-confirm-that-the-user-wishes-to-exit-an-android-activity.
+	@Override
+	public void onBackPressed() {
+	    new AlertDialog.Builder(this)
+        .setMessage("Er du sikker på at du vil avslutte?")
+        .setCancelable(false)
+        .setPositiveButton("Ja", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int id) {
+                 MapActivity.this.finish();
+            }
+        })
+        .setNegativeButton("Nei", null)
+        .show();
 	}
 	
 	private void setupLocation() {
@@ -305,8 +322,8 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 				editor.commit();
 			}
 			
-//			map = null;
-//			setUpMapIfNeeded();
+			map = null;
+			setUpMapIfNeeded();
 		}	
 	}
 	
@@ -558,7 +575,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	@Override
 	public void onInfoWindowClick(Marker marker) {
 		String stopID = Integer.toString(markerIDMap.get(marker.getSnippet()));
-		
+		onClickMarker = marker;
 		Bundle myBundle = new Bundle();
 		myBundle.putString("stopID", stopID);
 		myBundle.putString("user", user);
@@ -570,10 +587,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 		Log.d("StopID:", stopID);
 		
 		
-		 marker.remove();
-		 map.addMarker(new MarkerOptions()
-		                          .position(marker.getPosition())
-		                          .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)));
+		 
 // 		DeliveryDialogFragment dialog = new DeliveryDialogFragment();
 // 		dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
 //		AlertDialog.Builder dialog = new AlertDialog.Builder(MapActivity.this);
@@ -584,6 +598,16 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 //		alert11.show();
 //		Toast.makeText(MapActivity.this, "Wohoooo!!!!!", 
 //				Toast.LENGTH_SHORT).show(); 	
+	}
+	
+	public void disableMarker(String dateTime, String delivered, String returns) {
+		onClickMarker.remove();
+		 map.addMarker(new MarkerOptions()
+		                          .position(onClickMarker.getPosition())
+		                          .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+		                          .title(dateTime)
+		                          .snippet("Levert: " + delivered + 
+		                          		"\nRetur: " + returns));
 	}
 	
 
