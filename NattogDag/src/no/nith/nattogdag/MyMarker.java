@@ -10,6 +10,11 @@ public class MyMarker {
 	private String city;
 	private String url;
 	private LatLng latlng;
+	
+	private boolean hasBeenDelivered; //Toggles if this point has been market as delivered.
+	private String delivered; //Delivered newspapers at this point
+	private String returns; // Returned newspper at this point
+	private String dateTime; // DateTime of delivery
 	private int id;
 	
 	public MyMarker(String latitude, String longitude, String name, String address, String city,
@@ -109,6 +114,38 @@ public class MyMarker {
 
 	public void setId(int id) {
 		this.id = id;
+	}
+
+	public boolean getHasBeenDelivered() {
+		return hasBeenDelivered;
+	}
+
+	public void setHasBeenDelivered(boolean hasBeenDelivered) {
+		this.hasBeenDelivered = hasBeenDelivered;
+	}
+
+	public String getDelivered() {
+		return delivered;
+	}
+
+	public void setDelivered(String delivered) {
+		this.delivered = delivered;
+	}
+
+	public String getReturns() {
+		return returns;
+	}
+
+	public void setReturns(String returns) {
+		this.returns = returns;
+	}
+
+	public String getDateTime() {
+		return dateTime;
+	}
+
+	public void setDateTime(String dateTime) {
+		this.dateTime = dateTime;
 	}
 
 	@Override

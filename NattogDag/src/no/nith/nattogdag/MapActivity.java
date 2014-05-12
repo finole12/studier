@@ -374,11 +374,24 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 			
 				Log.e("jsonstring", jsonString);
 				for(MyMarker mymarker: markerArray) {
-					String snippet = mymarker.getAddress() + " " + mymarker.getCity();
-					markerIDMap.put(snippet, mymarker.getId());
-					map.addMarker(new MarkerOptions().position(mymarker.getLatlng())
-						.title(mymarker.getName())
-						.snippet(snippet));
+					if (!mymarker.getHasBeenDelivered()) {
+						String snippet = mymarker.getAddress() + " "
+								+ mymarker.getCity();
+						markerIDMap.put(snippet, mymarker.getId());
+						map.addMarker(new MarkerOptions()
+								.position(mymarker.getLatlng())
+								.title(mymarker.getName()).snippet(snippet));
+					} else {
+						String snippet2 = "Levert: " + mymarker.getDelivered() + 
+                     		" Retur: " + mymarker.getReturns();
+						markerIDMap.put(snippet2, mymarker.getId());
+						 map.addMarker(new MarkerOptions()
+	                         .position(mymarker.getLatlng())
+	                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+	                         .title(mymarker.getDateTime())
+	                         .snippet(snippet2));
+						
+					}
 				}
 			} else {
 				String toast = "Noe gikk galt med nedlastingen. \nVennligst prøv igjen.";
@@ -574,18 +587,31 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	// implement OnInfoWindowClickListener interface
 	@Override
 	public void onInfoWindowClick(Marker marker) {
-		String stopID = Integer.toString(markerIDMap.get(marker.getSnippet()));
 		onClickMarker = marker;
-		Bundle myBundle = new Bundle();
-		myBundle.putString("stopID", stopID);
-		myBundle.putString("user", user);
-		myBundle.putString("password", password);
-		DeliveryDialogFragment dialog = new DeliveryDialogFragment();
-		dialog.setArguments(myBundle);
-		dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
+		String stopID = Integer.toString(markerIDMap.get(marker
+				.getSnippet()));
+		int id = Integer.parseInt(stopID);
+		boolean notDeliveredMarker = false;
+		MyMarker onClickMyMarker;
 		
-		Log.d("StopID:", stopID);
+		for (MyMarker myMarker: markerArray) {
+			if(id == myMarker.getId()) {
+				if (!myMarker.getHasBeenDelivered()) {
+					notDeliveredMarker = true;
+				}
+			}
+		}
 		
+		if (notDeliveredMarker) {
+			Bundle myBundle = new Bundle();
+			myBundle.putString("stopID", stopID);
+			myBundle.putString("user", user);
+			myBundle.putString("password", password);
+			DeliveryDialogFragment dialog = new DeliveryDialogFragment();
+			dialog.setArguments(myBundle);
+			dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
+			Log.d("StopID:", stopID);
+		}
 		
 		 
 // 		DeliveryDialogFragment dialog = new DeliveryDialogFragment();
@@ -607,7 +633,31 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 		                          .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
 		                          .title(dateTime)
 		                          .snippet("Levert: " + delivered + 
-		                          		"\nRetur: " + returns));
+		                          		" Retur: " + returns));
+		 saveDisabledMarker(dateTime, delivered, returns);
+	}
+	
+	// Saves this markers state as hasBeenDelivered = true in SharedPreferences.
+	public void saveDisabledMarker(String dateTime, String delivered, 
+			String returns) {
+		
+		for (MyMarker myMarker: markerArray) {
+			String snippet = myMarker.getAddress() + " " + myMarker.getCity();
+			if(snippet.equals(onClickMarker.getSnippet())) {
+				myMarker.setHasBeenDelivered(true);
+				myMarker.setDateTime(dateTime);
+				myMarker.setDelivered(delivered);
+				myMarker.setReturns(returns);
+			}
+		}
+		
+		Gson gson = new Gson();
+		String  jsonString = gson.toJson(markerArray);
+		
+		Editor editor = savedValues.edit();
+		editor.putString("jsonString", jsonString);
+		editor.commit();
+		
 	}
 	
 
