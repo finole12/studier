@@ -160,8 +160,7 @@ public class DeliveryDialogFragment extends DialogFragment {
 			    Toast.makeText(context, "Rapporten er lagret", 
 						Toast.LENGTH_SHORT).show();
 			} else {
-				Toast.makeText(context, result, 
-						Toast.LENGTH_SHORT).show();
+				mapActivity.showErrorDialog(result);
 			}
 		}
 	}

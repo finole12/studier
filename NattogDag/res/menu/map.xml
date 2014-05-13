@@ -6,6 +6,12 @@
         android:showAsAction="never"
         android:icon="@drawable/ic_menu_preferences"/>
     
+   	<item  
+	    android:id="@+id/menu_resetMarkers"
+	    android:showAsAction="always"
+	    android:icon="@drawable/ic_menu_revert"
+	    />
+    
 	<item  
 	    android:id="@+id/menu_getMyMarkers"
 	    android:showAsAction="always"

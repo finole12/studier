@@ -72,6 +72,8 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	private GoogleMap map;
 	private Marker onClickMarker;
 	private HashMap<String, Integer> markerIDMap;
+	private HashMap<String, MyMarker> markerMap;
+	MyMarker onClickMyMarker;
 	private String user;
 	private String password;
 	private static MyMarker[] markerArray;
@@ -139,6 +141,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	
 	@Override
 	protected void onPause() {
+		saveMarkerArray();
 		saveZoomAndLocation();
 		map = null;
 		
@@ -225,7 +228,10 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 						"&command=getRoute";
 	        	
 	        	new GetMyMarkers().execute(getRouteURL);
-					
+	        	return true;
+			case R.id.menu_resetMarkers:
+				ResetDialogFragment dialog = new ResetDialogFragment();
+				dialog.show(getFragmentManager(), "Tilbakestill");
 				return true;
 				
 			default: 
@@ -333,7 +339,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 		protected String doInBackground(String... params) {
 			String directionsUrl = params[0];
 			String jsonString = Internet.getJsonString(directionsUrl);
-			Log.e("JsonString", jsonString);
+			
 			return jsonString;
 		}
 		
@@ -368,24 +374,29 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 			// MyMarker objects
 			String jsonString = savedValues.getString("jsonString", null);
 			markerIDMap = new HashMap<String, Integer>();
+			markerMap = new HashMap<String, MyMarker>();
 			
 			markerArray = gson.fromJson(jsonString, MyMarker[].class);
 			if(markerArray != null) {
-			
-				Log.e("jsonstring", jsonString);
+
 				for(MyMarker mymarker: markerArray) {
-					if (!mymarker.getHasBeenDelivered()) {
-						String snippet = mymarker.getAddress() + " "
-								+ mymarker.getCity();
-						markerIDMap.put(snippet, mymarker.getId());
+					String snippet = mymarker.getAddress() + " "
+							+ mymarker.getCity();
+					String mapKey = mymarker.getName() + snippet;
+					markerMap.put(mapKey, mymarker);
+					if (!mymarker.getHasBeenDelivered()) {	
+						markerIDMap.put(mapKey, mymarker.getId());
 						map.addMarker(new MarkerOptions()
 								.position(mymarker.getLatlng())
-								.title(mymarker.getName()).snippet(snippet));
+								.title(mymarker.getName())
+								.snippet(snippet));
 					} else {
 						String snippet2 = "Levert: " + mymarker.getDelivered() + 
                      		" Retur: " + mymarker.getReturns();
-						markerIDMap.put(snippet2, mymarker.getId());
-						 map.addMarker(new MarkerOptions()
+						String mapKey2 = mymarker.getDateTime() + snippet2;
+						markerIDMap.put(mapKey2, mymarker.getId());
+						markerMap.put(mapKey2, mymarker);
+						map.addMarker(new MarkerOptions()
 	                         .position(mymarker.getLatlng())
 	                         .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
 	                         .title(mymarker.getDateTime())
@@ -422,38 +433,42 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 //					Toast.LENGTH_SHORT).show();
 //		}
 		MyMarker furtherestMarker = findFurtherestMarker(onClickMarker.getPosition());
-		MyMarker onClickMyMarker = null;
-		String tempSnippet = onClickMarker.getSnippet();
-		Log.e("tempSnippet", tempSnippet);
-		for(MyMarker myMarker: markerArray) {
-			String tempSnippet2 = myMarker.getAddress();
-			if(tempSnippet.contains(tempSnippet2)) {
-				Log.e("tempSnippet2", tempSnippet2);
-				Log.e("Yipee!!", "We have a match!!!!");
-				onClickMyMarker = myMarker;
-				Log.e("Yipee!!", onClickMyMarker.getAddress());
-			}
-		}
+		String mapKey = onClickMarker.getTitle() + onClickMarker.getSnippet();
 		
-		createDirectionsURL(furtherestMarker, onClickMyMarker);
+//		MyMarker onClickMyMarker = null;
+//		String tempSnippet = onClickMarker.getSnippet();
+//		Log.e("tempSnippet", tempSnippet);
+//		for(MyMarker myMarker: markerArray) {
+//			String tempSnippet2 = myMarker.getAddress();
+//			if(tempSnippet.contains(tempSnippet2)) {
+//
+//				onClickMyMarker = myMarker;
+//
+//			}
+//		}
+		
+		createDirectionsURL(furtherestMarker, markerMap.get(mapKey));
 //		Log.e("Yipee!!", marker.getId());
 //		Toast.makeText(MapActivity.this, temp.getId(), Toast.LENGTH_SHORT).show();
 	}
 	
-	public void createDirectionsURL(MyMarker furtherestMarker, MyMarker onClickMyMarker) {
+	public void createDirectionsURL(MyMarker furtherestMarker, MyMarker onClickMyMarker2) {
 
 		String waypoints = "";
 		for(MyMarker myMarker: markerArray) {
-			if(!myMarker.equals(furtherestMarker) & !myMarker.equals(onClickMyMarker)) {
+			if(!myMarker.equals(furtherestMarker) & !myMarker.equals(onClickMyMarker2)) {
 				waypoints += "|" + myMarker.getLatitude() + "," + myMarker.getLongitude();
 			}
 		}
 		
-		Log.e("Waypoints!", waypoints);
-		
+		if (onClickMyMarker2 == null) {
+			Log.e("NULL!!", "onClickMyMarker2 == null!!!!!!!!!!!!!");
+		} else {
+			Log.e("NULL!!", "onClickMyMarker2 er ikke null!!!!!!!!!!!!!");
+		}
 		String directionsUrl = "https://maps.googleapis.com/maps/api/directions/";
 		
-		directionsUrl += "json?origin=" + onClickMyMarker.getLatitude() + "," + onClickMyMarker.getLongitude();
+		directionsUrl += "json?origin=" + onClickMyMarker2.getLatitude() + "," + onClickMyMarker2.getLongitude();
 		
 		directionsUrl += "&destination=" + furtherestMarker.getLatitude() + "," + furtherestMarker.getLongitude();
 		
@@ -588,14 +603,14 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	@Override
 	public void onInfoWindowClick(Marker marker) {
 		onClickMarker = marker;
-		String stopID = Integer.toString(markerIDMap.get(marker
-				.getSnippet()));
+		String mapKey = marker.getTitle() + marker.getSnippet();
+		String stopID = Integer.toString(markerIDMap.get(mapKey));
 		int id = Integer.parseInt(stopID);
 		boolean notDeliveredMarker = false;
-		MyMarker onClickMyMarker;
 		
 		for (MyMarker myMarker: markerArray) {
 			if(id == myMarker.getId()) {
+				onClickMyMarker = myMarker;
 				if (!myMarker.getHasBeenDelivered()) {
 					notDeliveredMarker = true;
 				}
@@ -610,8 +625,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 			DeliveryDialogFragment dialog = new DeliveryDialogFragment();
 			dialog.setArguments(myBundle);
 			dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
-			Log.d("StopID:", stopID);
-		}
+		} 
 		
 		 
 // 		DeliveryDialogFragment dialog = new DeliveryDialogFragment();
@@ -626,30 +640,50 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 //				Toast.LENGTH_SHORT).show(); 	
 	}
 	
+	public void enableAndSaveMarker(int id) {
+		for(MyMarker myMarker: markerArray) {
+			if(id == myMarker.getId()) {
+				myMarker.setHasBeenDelivered(false);
+				
+				Gson gson = new Gson();
+				String  jsonString = gson.toJson(markerArray);
+				
+				Editor editor = savedValues.edit();
+				editor.putString("jsonString", jsonString);
+				editor.commit();
+			}
+		}
+		
+	}
+	
 	public void disableMarker(String dateTime, String delivered, String returns) {
+		LatLng position = onClickMarker.getPosition();
 		onClickMarker.remove();
-		 map.addMarker(new MarkerOptions()
-		                          .position(onClickMarker.getPosition())
+		String snippet = "Levert: " + delivered + 
+          		" Retur: " + returns;
+		String mapKey = dateTime + snippet;
+		markerIDMap.put(mapKey, onClickMyMarker.getId());
+		markerMap.put(mapKey, onClickMyMarker);
+		map.addMarker(new MarkerOptions()
+		                          .position(position)
 		                          .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
 		                          .title(dateTime)
 		                          .snippet("Levert: " + delivered + 
 		                          		" Retur: " + returns));
-		 saveDisabledMarker(dateTime, delivered, returns);
-	}
-	
-	// Saves this markers state as hasBeenDelivered = true in SharedPreferences.
-	public void saveDisabledMarker(String dateTime, String delivered, 
-			String returns) {
-		
+		 
 		for (MyMarker myMarker: markerArray) {
-			String snippet = myMarker.getAddress() + " " + myMarker.getCity();
-			if(snippet.equals(onClickMarker.getSnippet())) {
+			String snippet2 = myMarker.getAddress() + " " + myMarker.getCity();
+			if(snippet2.equals(onClickMarker.getSnippet())) {
 				myMarker.setHasBeenDelivered(true);
 				myMarker.setDateTime(dateTime);
 				myMarker.setDelivered(delivered);
 				myMarker.setReturns(returns);
 			}
 		}
+	}
+	
+	// Saves the markerArray to SharedPreferences as a String.
+	public void saveMarkerArray() {
 		
 		Gson gson = new Gson();
 		String  jsonString = gson.toJson(markerArray);
@@ -660,5 +694,31 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 		
 	}
 	
+	public void showErrorDialog(String result) {
+		new AlertDialog.Builder(this)
+		.setTitle("Noe gikk galt med opplastingen. Har mobilen nettverkstilgang?")
+		.setMessage(result)
+		.setCancelable(true)
+		.setNegativeButton("OK", null)
+        .show();
+	}
+	
+	public void resetMarkers() {
+		map.clear();
+		markerMap.clear();
+		markerIDMap.clear();
+		for(MyMarker myMarker: markerArray) {
+			String snippet = myMarker.getAddress() + " "
+					+ myMarker.getCity();
+			String mapKey = myMarker.getName() + snippet;
+			markerMap.put(mapKey, myMarker);
+			markerIDMap.put(mapKey, myMarker.getId());
+			myMarker.setHasBeenDelivered(false);
+			map.addMarker(new MarkerOptions()
+				.position(myMarker.getLatlng())
+				.title(myMarker.getName())
+				.snippet(snippet));
+		}
+	}
 
 }

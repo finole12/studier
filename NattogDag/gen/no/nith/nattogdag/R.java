@@ -223,24 +223,26 @@ containing a value of this type.
         public static final int ic_menu_mylocation=0x7f020021;
         public static final int ic_menu_preferences=0x7f020022;
         public static final int ic_menu_recent_history=0x7f020023;
-        public static final int ic_plusone_medium_off_client=0x7f020024;
-        public static final int ic_plusone_small_off_client=0x7f020025;
-        public static final int ic_plusone_standard_off_client=0x7f020026;
-        public static final int ic_plusone_tall_off_client=0x7f020027;
-        public static final int ic_popup_sync_2=0x7f020028;
-        public static final int ic_popup_sync_5=0x7f020029;
-        public static final int logginforsie2=0x7f02002a;
+        public static final int ic_menu_revert=0x7f020024;
+        public static final int ic_plusone_medium_off_client=0x7f020025;
+        public static final int ic_plusone_small_off_client=0x7f020026;
+        public static final int ic_plusone_standard_off_client=0x7f020027;
+        public static final int ic_plusone_tall_off_client=0x7f020028;
+        public static final int ic_popup_sync_2=0x7f020029;
+        public static final int ic_popup_sync_5=0x7f02002a;
+        public static final int logginforsie2=0x7f02002b;
     }
     public static final class id {
-        public static final int action_settings=0x7f06000e;
+        public static final int action_settings=0x7f06000f;
         public static final int delivery=0x7f060009;
         public static final int editText1=0x7f060005;
         public static final int editText2=0x7f060006;
         public static final int hybrid=0x7f060004;
         public static final int map=0x7f060008;
         public static final int mapButton=0x7f060007;
-        public static final int menu_getDirections=0x7f06000d;
-        public static final int menu_getMyMarkers=0x7f06000c;
+        public static final int menu_getDirections=0x7f06000e;
+        public static final int menu_getMyMarkers=0x7f06000d;
+        public static final int menu_resetMarkers=0x7f06000c;
         public static final int menu_settings=0x7f06000b;
         public static final int none=0x7f060000;
         public static final int normal=0x7f060001;
