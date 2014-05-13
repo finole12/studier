@@ -657,19 +657,23 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	}
 	
 	public void disableMarker(String dateTime, String delivered, String returns) {
-		LatLng position = onClickMarker.getPosition();
-		onClickMarker.remove();
+//		LatLng position = onClickMarker.getPosition();
+		
 		String snippet = "Levert: " + delivered + 
           		" Retur: " + returns;
 		String mapKey = dateTime + snippet;
 		markerIDMap.put(mapKey, onClickMyMarker.getId());
 		markerMap.put(mapKey, onClickMyMarker);
-		map.addMarker(new MarkerOptions()
-		                          .position(position)
-		                          .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-		                          .title(dateTime)
-		                          .snippet("Levert: " + delivered + 
-		                          		" Retur: " + returns));
+		onClickMarker.setTitle(dateTime);
+		onClickMarker.setSnippet(snippet);
+		onClickMarker.setIcon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE));
+		
+//		map.addMarker(new MarkerOptions()
+//		                          .position(position)
+//		                          .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+//		                          .title(dateTime)
+//		                          .snippet("Levert: " + delivered + 
+//		                          		" Retur: " + returns));
 		 
 		for (MyMarker myMarker: markerArray) {
 			String snippet2 = myMarker.getAddress() + " " + myMarker.getCity();
