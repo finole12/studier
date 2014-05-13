@@ -18,7 +18,7 @@
             android:title="@string/directions_preference_title"
             android:icon="@drawable/ic_menu_edit"
             android:summary="@string/directions_preference_summary"
-            android:defaultValue="true"/>
+            android:defaultValue="false"/>
 	    
 	    <ListPreference 
 	        android:key="pref_movement"
@@ -57,7 +57,7 @@
             android:title="@string/gps_preference_title"
             android:icon="@drawable/ic_menu_mylocation"
             android:summary="@string/gps_preference_summary"
-            android:defaultValue="true"/>
+            android:defaultValue="false"/>
         
         <CheckBoxPreference 
             android:key="pref_enable_map_tracking"
@@ -65,7 +65,7 @@
             android:icon="@drawable/ic_popup_sync_2"
             android:summary="@string/tracking_preference_summary"
             android:dependency="pref_enable_gps"
-            android:defaultValue="true"/>
+            android:defaultValue="false"/>
         
         <ListPreference 
             android:key="pref_location_update"

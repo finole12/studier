@@ -27,7 +27,7 @@
     <string name="preference_gps_category">GPS</string>
     <string name="map_default">MAP_TYPE_NORMAL</string>
     <string name="movement_default">walking</string>
-    <string name="movement_update_default">5</string>
+    <string name="movement_update_default">20</string>
     <string name="delivery">Antall levert:</string>
     <string name="returns">Antall retur:</string>
     <string name="ok">Send rapport</string>
