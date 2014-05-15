@@ -1,21 +1,17 @@
 package no.nith.nattogdag;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
 import java.io.Serializable;
-import java.net.URL;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Scanner;
+import java.util.TimeZone;
 
 import org.gavaghan.geodesy.Ellipsoid;
 import org.gavaghan.geodesy.GeodeticCalculator;
 import org.gavaghan.geodesy.GlobalPosition;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient.ConnectionCallbacks;
 import com.google.android.gms.common.GooglePlayServicesClient.OnConnectionFailedListener;
@@ -35,7 +31,6 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.gson.Gson;
 
-import android.R.integer;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -45,18 +40,13 @@ import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.TextView;
 import android.widget.Toast;
-import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
-import android.graphics.Color;
 
 public class MapActivity extends FragmentActivity implements OnMarkerClickListener,
 		ConnectionCallbacks, OnConnectionFailedListener, LocationListener, Serializable, 
@@ -79,6 +69,10 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	private static MyMarker[] markerArray;
 	private Boolean firstclick;
 	private static final int FASTEST_UPDATE_INTERVAL = 1000; // 1 second (locationlistener interface)
+	// Get route updates from server if it is more than 24 hours since last update.
+	private static final long ROUTE_UPDATE_INTERVAL = 24;
+	private static final String SERVER_URL = "https://nattogdagprosjekt-nith.rhcloud.com/NattogDag/" +
+			"JsonServlet";
 	Polyline polyline;
 	
 
@@ -95,8 +89,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 		prefs = PreferenceManager.getDefaultSharedPreferences(this);
 		locationClient = new LocationClient(this, this, this);
 		
-		savedValues = getSharedPreferences("savedValues", MODE_PRIVATE);
-		
+		savedValues = getSharedPreferences("savedValues", MODE_PRIVATE);		
 		
 		Intent intent = getIntent();
 		user = intent.getStringExtra("user");
@@ -105,6 +98,10 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 		if(savedInstanceState != null) {
 			user = savedInstanceState.getString("user");
 			password = savedInstanceState.getString("password");
+		}
+			
+		if(updateOnInterval()) {    	
+        	new GetMyMarkers().execute(SERVER_URL, user, password);
 		}
 		
 		firstclick = false;
@@ -222,13 +219,12 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 					Toast.makeText(MapActivity.this, toast, Toast.LENGTH_LONG).show();
 				}
 				return true;
+				
 			case R.id.menu_getMyMarkers:
-				String getRouteURL = "https://nattogdagprosjekt-nith.rhcloud.com/NattogDag/" +
-						"JsonServlet?user=" + user + "&password=" + password +
-						"&command=getRoute";
 	        	
-	        	new GetMyMarkers().execute(getRouteURL);
+	        	new GetMyMarkers().execute(SERVER_URL, user, password);
 	        	return true;
+	        	
 			case R.id.menu_resetMarkers:
 				ResetDialogFragment dialog = new ResetDialogFragment();
 				dialog.show(getFragmentManager(), "Tilbakestill");
@@ -237,6 +233,46 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 			default: 
 				return false;
 		}
+	}
+	
+	// Check how long since the last time a new route was downloaded from server, and returns
+	// true if new route should be downloaded.
+	public boolean updateOnInterval() {
+		Calendar cal = Calendar.getInstance();
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+		sdf.setTimeZone(TimeZone.getTimeZone("Europe/Oslo"));
+		String dateTime = sdf.format(cal.getTime());
+		// Get the last time the app checked for updates.
+		String savedDateTime = savedValues.getString("dateTime", "1970-01-03 11:23:00");
+		
+		Editor editor = savedValues.edit();	// Saves current date and time to SharedPreferences.
+		editor.putString("dateTime", dateTime);
+		editor.commit();	
+		long minutes;	//Difference between date and time in minutes
+		long seconds;	//Difference in seconds
+		long hours;		//Difference in hours
+		
+		try {
+			Date currentDateTime = sdf.parse(dateTime);
+			Date previousDateTime = sdf.parse(savedDateTime);
+
+			long differenceInMilliseconds = currentDateTime.getTime() - previousDateTime.getTime();
+			minutes = differenceInMilliseconds/1000/60;
+			seconds = differenceInMilliseconds/1000;
+			hours = minutes/60/24;
+			
+	    	// Return true if difference is more than 24 hours.
+			if(hours > ROUTE_UPDATE_INTERVAL) {
+				return true;
+			}
+			
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return false;
+		
 	}
 	
 
@@ -290,7 +326,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	}
 	
 
-	
+	// Download the route from server in a separate thread.
 	class GetMyMarkers extends AsyncTask<String, Void, String> {
 		@Override
 		protected void onPreExecute() {
@@ -304,11 +340,14 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 
 		@Override
 		protected String doInBackground(String... params) {
-			String urlString = params[0];
+			String host = params[0];
+			String user = params[1];
+			String password = params[2];
+			
 			String jsonString = null;
 			
 			try {
-				jsonString = Internet.getJsonString(urlString);
+				jsonString = Internet.sendPostRequest(host, user, password, "getRoute");
 				
 			} catch (Exception e) {
 				Log.e("GetMarkers", e.toString());
@@ -323,9 +362,15 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 			}
 			
 			if (jsonString != null) {
+				String updatedJsonString = setDelivered(jsonString);
 				Editor editor = savedValues.edit();
-				editor.putString("jsonString", jsonString);
-				editor.commit();
+				if (updatedJsonString != null) {	
+					editor.putString("jsonString", updatedJsonString);
+					editor.commit();
+				} else {
+					editor.putString("jsonString", jsonString);
+					editor.commit();
+				}
 			}
 			
 			map = null;
@@ -367,6 +412,45 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 		
 	}
 	
+	// Sets the state of delivery in the downloaded MyMarker objects to the state of the
+	// MyMarker objects stored in SharedPreferences (So no information is lost when a new route
+	// is downloaded from server).
+	public String setDelivered(String downloadedJsonString) {
+		Gson gson = new Gson(); // <-- Using Gson to convert the Json to an array of 
+		// MyMarker objects
+		MyMarker[] downloadedMyMarkerarray = null;
+		
+		try {
+			String savedJsonString = savedValues.getString("jsonString", null);
+			MyMarker[] savedMyMarkerarray;
+			if(markerArray == null) {
+				savedMyMarkerarray = gson.fromJson(savedJsonString, MyMarker[].class);
+			} else {
+				savedMyMarkerarray = markerArray;
+			}
+			downloadedMyMarkerarray = gson.fromJson(downloadedJsonString, MyMarker[].class);
+			for(MyMarker savedMarker: savedMyMarkerarray) {
+				for(MyMarker downloadedMarker: downloadedMyMarkerarray) {
+					if(savedMarker.getId() == downloadedMarker.getId()) {
+						boolean delivered = savedMarker.getHasBeenDelivered();
+						if (delivered) {
+							downloadedMarker.setHasBeenDelivered(delivered);
+							downloadedMarker.setDateTime(savedMarker.getDateTime());
+							downloadedMarker.setDelivered(savedMarker.getDelivered());
+							downloadedMarker.setReturns(savedMarker.getReturns());
+						}
+					}
+				}
+				
+			}
+		} catch(NullPointerException ex) {
+			return null;
+		}
+		
+		return gson.toJson(downloadedMyMarkerarray);
+	}
+	
+	// Add Markers to the map.
 	private void addMarkers() {
 		
 		if(savedValues.getString("jsonString", null)  != null) {
@@ -414,44 +498,19 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 					.show();
 			}
 			
-		} else {
-			String toastMsg = "Vennligst last ned avisrute ved å trykke på nedlastingsknappen.";
-			Toast.makeText(MapActivity.this, toastMsg, Toast.LENGTH_LONG).show();
-			Toast.makeText(MapActivity.this, toastMsg, Toast.LENGTH_LONG).show();
-			Toast.makeText(MapActivity.this, toastMsg, Toast.LENGTH_LONG).show();
-		}
+		} 
 		
 	}
 	
 	public void addPolyLine(Marker onClickMarker) {
-//		Location location = locationClient.getLastLocation();
-//		if (location != null) {
-//			MyMarker closestMarker = findClosestMarker(new LatLng(location.getLatitude(), 
-//					location.getLongitude()));
-//			Toast.makeText(MapActivity.this, "Closest stop is "
-//					+ closestMarker.getName() + " " + closestMarker.getAddress(), 
-//					Toast.LENGTH_SHORT).show();
-//		}
+
 		MyMarker furtherestMarker = findFurtherestMarker(onClickMarker.getPosition());
 		String mapKey = onClickMarker.getTitle() + onClickMarker.getSnippet();
 		
-//		MyMarker onClickMyMarker = null;
-//		String tempSnippet = onClickMarker.getSnippet();
-//		Log.e("tempSnippet", tempSnippet);
-//		for(MyMarker myMarker: markerArray) {
-//			String tempSnippet2 = myMarker.getAddress();
-//			if(tempSnippet.contains(tempSnippet2)) {
-//
-//				onClickMyMarker = myMarker;
-//
-//			}
-//		}
-		
 		createDirectionsURL(furtherestMarker, markerMap.get(mapKey));
-//		Log.e("Yipee!!", marker.getId());
-//		Toast.makeText(MapActivity.this, temp.getId(), Toast.LENGTH_SHORT).show();
 	}
 	
+	// Create an URL for sending to Google Directions Service. 
 	public void createDirectionsURL(MyMarker furtherestMarker, MyMarker onClickMyMarker2) {
 
 		String waypoints = "";
@@ -461,11 +520,6 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 			}
 		}
 		
-		if (onClickMyMarker2 == null) {
-			Log.e("NULL!!", "onClickMyMarker2 == null!!!!!!!!!!!!!");
-		} else {
-			Log.e("NULL!!", "onClickMyMarker2 er ikke null!!!!!!!!!!!!!");
-		}
 		String directionsUrl = "https://maps.googleapis.com/maps/api/directions/";
 		
 		directionsUrl += "json?origin=" + onClickMyMarker2.getLatitude() + "," + onClickMyMarker2.getLongitude();
@@ -491,8 +545,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 				directionsUrl += "|highways";
 		}
 		
-		Log.e("DirectionsURL!!!!", directionsUrl);
-		
+		// Send the request in a separate thread.
 		new GetDirectionsFromGoogle().execute(directionsUrl);
 
 	}
@@ -542,8 +595,7 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 				furtherestMarker = marker;
 			}
 		}
-//		Toast.makeText(MapActivity.this, "Furtherest marker is " + furtherestMarker.getName()
-//				+ " " + furtherestMarker.getAddress(), Toast.LENGTH_SHORT).show();
+		
 		return furtherestMarker;
 	}
 	
@@ -581,13 +633,15 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 	// Implement LocationListener interface
 	@Override
 	public void onLocationChanged(Location location) {
-//		Toast.makeText(MapActivity.this, location.getLatitude() + " " + location.getLongitude(), 
-//				Toast.LENGTH_SHORT).show();
-//				LatLng position = new LatLng(location.getLatitude(), location.getLongitude());
-//				float zoom = savedValues.getFloat("zoom", 10);
+
 		if(location != null) {
-				map.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), 
-						location.getLongitude())));
+			// A nullPointerException would sometimes be thrown here for unknown reasons.
+			try {	
+				map.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(
+						location.getLatitude(), location.getLongitude())));
+			} catch (NullPointerException e) {
+				// TODO: handle exception
+			}
 		}
 	}
 	
@@ -606,18 +660,15 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 		String mapKey = marker.getTitle() + marker.getSnippet();
 		String stopID = Integer.toString(markerIDMap.get(mapKey));
 		int id = Integer.parseInt(stopID);
-		boolean notDeliveredMarker = false;
+		
 		
 		for (MyMarker myMarker: markerArray) {
 			if(id == myMarker.getId()) {
 				onClickMyMarker = myMarker;
-				if (!myMarker.getHasBeenDelivered()) {
-					notDeliveredMarker = true;
-				}
 			}
 		}
 		
-		if (notDeliveredMarker) {
+		if (!onClickMyMarker.getHasBeenDelivered()) {
 			Bundle myBundle = new Bundle();
 			myBundle.putString("stopID", stopID);
 			myBundle.putString("user", user);
@@ -626,35 +677,24 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 			dialog.setArguments(myBundle);
 			dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
 		} 
-		
-		 
-// 		DeliveryDialogFragment dialog = new DeliveryDialogFragment();
-// 		dialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
-//		AlertDialog.Builder dialog = new AlertDialog.Builder(MapActivity.this);
-//		dialog.setMessage("Din melding her!");
-//		dialog.setCancelable(true);
-//		
-//		AlertDialog alert11 = dialog.create();
-//		alert11.show();
-//		Toast.makeText(MapActivity.this, "Wohoooo!!!!!", 
-//				Toast.LENGTH_SHORT).show(); 	
+			
 	}
 	
-	public void enableAndSaveMarker(int id) {
-		for(MyMarker myMarker: markerArray) {
-			if(id == myMarker.getId()) {
-				myMarker.setHasBeenDelivered(false);
-				
-				Gson gson = new Gson();
-				String  jsonString = gson.toJson(markerArray);
-				
-				Editor editor = savedValues.edit();
-				editor.putString("jsonString", jsonString);
-				editor.commit();
-			}
-		}
-		
-	}
+//	public void enableAndSaveMarker(int id) {
+//		for(MyMarker myMarker: markerArray) {
+//			if(id == myMarker.getId()) {
+//				myMarker.setHasBeenDelivered(false);
+//				
+//				Gson gson = new Gson();
+//				String  jsonString = gson.toJson(markerArray);
+//				
+//				Editor editor = savedValues.edit();
+//				editor.putString("jsonString", jsonString);
+//				editor.commit();
+//			}
+//		}
+//		
+//	}
 	
 	public void disableMarker(String dateTime, String delivered, String returns) {
 		for (MyMarker myMarker: markerArray) {
@@ -667,23 +707,37 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
 			}
 		}
 		LatLng position = onClickMarker.getPosition();
-		onClickMarker.remove();
 		String snippet = "Levert: " + delivered + 
           		" Retur: " + returns;
 		String mapKey = dateTime + snippet;
 		markerIDMap.put(mapKey, onClickMyMarker.getId());
 		markerMap.put(mapKey, onClickMyMarker);
-		map.addMarker(new MarkerOptions()
-		                          .position(position)
-		                          .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
-		                          .title(dateTime)
-		                          .snippet("Levert: " + delivered + 
-		                          		" Retur: " + returns));
+
+		map.clear();
+		for(MyMarker mymarker: markerArray) {
+			String snippet3 = mymarker.getAddress() + " "
+					+ mymarker.getCity();
+			if (!mymarker.getHasBeenDelivered()) {	
+				map.addMarker(new MarkerOptions()
+						.position(mymarker.getLatlng())
+						.title(mymarker.getName())
+						.snippet(snippet3));
+			} else {
+				String snippet2 = "Levert: " + mymarker.getDelivered() + 
+             		" Retur: " + mymarker.getReturns();
+				map.addMarker(new MarkerOptions()
+                     .position(mymarker.getLatlng())
+                     .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                     .title(mymarker.getDateTime())
+                     .snippet(snippet2));
+				
+			}
+		}
 		 
 		
 	}
 	
-	// Saves the markerArray to SharedPreferences as a String.
+	// Save the markerArray to SharedPreferences as a String.
 	public void saveMarkerArray() {
 		
 		Gson gson = new Gson();
@@ -704,6 +758,8 @@ public class MapActivity extends FragmentActivity implements OnMarkerClickListen
         .show();
 	}
 	
+	// Removes all the markers on the map, so a marker can be changed, and then all markers added again.
+	// Changing a single marker on the map would sometimes not work correctly, an error in Googles code?
 	public void resetMarkers() {
 		map.clear();
 		markerMap.clear();

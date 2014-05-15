@@ -1,32 +1,15 @@
 package no.nith.nattogdag;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.Scanner;
-
-
-
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
-import android.util.Log;
-import android.view.KeyEvent;
-import android.view.Menu;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.TextView.OnEditorActionListener;
 import android.widget.Toast;
 
 public class MainActivity extends Activity implements OnClickListener {
@@ -38,6 +21,8 @@ public class MainActivity extends Activity implements OnClickListener {
 	private String user;
 	private String password;
 	private ProgressDialog pd;
+	private static final String SERVER_URL = "https://nattogdagprosjekt-nith.rhcloud.com/NattogDag/" +
+			"JsonServlet";
 	
 	
 	
@@ -75,29 +60,14 @@ public class MainActivity extends Activity implements OnClickListener {
 			pd.setIndeterminate(true);
 			pd.show();
 		}
-
+		
 		@Override
 		protected String doInBackground(String... params) {
 			String user = params[0];
 			String password = params[1];
-			String authentication = null;
-			BufferedReader in;
-			try {
-				URL url = new URL("https://nattogdagprosjekt-nith.rhcloud.com/NattogDag/" +
-						"JsonServlet?user=" + user + "&password=" + password +
-								"&command=getAuthentication");
-				in = new BufferedReader(
-				        new InputStreamReader(url.openStream(), "UTF-8"));
-				Scanner scanner = new Scanner(in);
-				// Uses the regex \A, which matches the beginning of input, telling Scanner 
-				// to tokenize the entire stream.
-				authentication = scanner.useDelimiter("\\A").next();
-				scanner.close();
-				in.close();
-			} catch (Exception e) {
-				Log.e("Error connecting", e.toString());
-			} 
 			
+			String authentication = Internet.sendPostRequest(SERVER_URL, user, password, 
+					"getAuthentication");		
 			
 			String result = "";
 			if (Boolean.parseBoolean(authentication)) {

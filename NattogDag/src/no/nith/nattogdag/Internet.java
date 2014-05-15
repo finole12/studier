@@ -27,6 +27,7 @@ import android.util.Log;
 
 public class Internet {
 	
+//	Get a String with JSON objects with a http GET request.
 	public static String getJsonString(String urlString) {
 		BufferedReader rd;
 		String jsonString = ""; // <-- The JsonArray downloaded from server as a String.
@@ -48,6 +49,50 @@ public class Internet {
 		return jsonString;
 	}
 	
+	// Send a http POST request with parameters to the server.
+	public static String sendPostRequest(String host, String user, String password,String command) {
+		BufferedReader rd;
+		String responseString = ""; // <-- The JsonArray downloaded from server as a String.
+		try {
+			String parameters = URLEncoder.encode("command", "ISO-8859-1")
+					+ "=" + URLEncoder.encode(command, "ISO-8859-1");
+			
+			parameters += "&" + URLEncoder.encode("user", "ISO-8859-1")
+					+ "=" + URLEncoder.encode(user, "ISO-8859-1");
+			
+			parameters += "&" + URLEncoder.encode("password", "ISO-8859-1")
+					+ "=" + URLEncoder.encode(password, "ISO-8859-1");
+			
+			URL url = new URL(host);
+			
+			URLConnection conn = url.openConnection(); 
+            conn.setDoOutput(true); 
+            OutputStreamWriter wr = new OutputStreamWriter(conn.getOutputStream()); 
+            wr.write(parameters);
+            wr.flush();
+            
+            rd = new BufferedReader(new InputStreamReader(conn.getInputStream(), "ISO-8859-1"));
+            
+			Scanner scanner = new Scanner(rd);
+			// Uses the regex \A, which matches the beginning of input, telling Scanner 
+			// to tokenize the entire stream.
+			responseString = scanner.useDelimiter("\\A").next();
+			scanner.close();
+
+		} catch (UnsupportedEncodingException e) {
+			Log.e("GetMarkers", e.toString());
+		} catch (MalformedURLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+		return responseString;
+	} 
+	
+	// Send the delivery report to server with a http POST request. 
+	// pointID is the primary key for this stop in the "distribusjonspunkt"-table in the database.
 	public static String sendDeliveryReport(String user, String password, String stopID, String delivered, 
 			String returns) {
 		BufferedReader rd;
